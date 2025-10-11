@@ -1,214 +1,293 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(45deg, #6ab7f5, #f086d3);
-        }
-        .login-container {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            width: 300px;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-top: 0;
-            margin-bottom: 1.5rem;
-        }
-        .input-group {
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #555;
-        }
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-        .password-toggle {
-            position: absolute;
-            right: 10px;
-            top: 65%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #888;
-        }
-        button {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .error-message {
-            color: red;
-            text-align: center;
-            margin-top: 1rem;
-        }
-        .signup-link {
-            text-align: center;
-            margin-top: 1rem;
-        }
-        .signup-link a {
-            color: #4CAF50;
-            text-decoration: none;
-        }
-        .signup-link a:hover {
-            text-decoration: underline;
-        }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Login</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-        .nav-buttons {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-        }
+  <style>
+    :root{
+      --bg:#0b0f1a;
+      --glassA: rgba(255,255,255,0.12);
+      --glassB: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.16);
+      --text:#f5f7fb;
+      --muted:#c8d0e0;
+      --accent:#7cc8ff;
+      --ok:#2ecc71;
+      --err:#ff6b6b;
+      --radius:18px;
+      --shadow:0 24px 60px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.06);
+    }
 
-        .home-button, .user-profile {
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+    @keyframes floatSlow { 0%,100%{ transform:translateY(0)} 50%{ transform:translateY(-6px)} }
+    @keyframes shimmer{ 0%{ background-position:-200% 0 } 100%{ background-position:200% 0 } }
+    @keyframes ripple{ from{opacity:.5; transform: translate(-50%,-50%) scale(1)} to{opacity:0; transform: translate(-50%,-50%) scale(22)} }
 
-        .home-button:hover, .user-profile:hover {
-            background-color: rgba(255, 255, 255, 1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-        }
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color:var(--text);
+      display:flex; justify-content:center; align-items:center;
+      padding: 24px;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(124,200,255,.15), transparent 50%),
+        radial-gradient(900px 600px at 115% 15%, rgba(243,156,226,.15), transparent 55%),
+        radial-gradient(1000px 800px at 50% 115%, rgba(114,241,184,.08), transparent 60%),
+        linear-gradient(180deg, #070b13, var(--bg));
+      overflow:auto;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+    body::-webkit-scrollbar{ display:none }
 
-        .home-button i, .user-profile i {
-            font-size: 1.2rem;
-            color: #3498db;
-        }
+    .noise{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.06;
+      background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light; }
+    .aurora{ position:fixed; inset:-25vmax; z-index:0; filter: blur(60px) saturate(120%);
+      background:
+        radial-gradient(closest-side at 25% 28%, rgba(124,200,255,.30), transparent 60%),
+        radial-gradient(closest-side at 70% 30%, rgba(243,156,226,.28), transparent 60%),
+        radial-gradient(closest-side at 55% 70%, rgba(114,241,184,.20), transparent 60%);
+      animation: floatSlow 20s ease-in-out infinite; }
 
-        .user-profile {
-            position: relative;
-        }
+    /* Home chip */
+    .nav-buttons{ position:fixed; top:18px; left:18px; right:18px; z-index:2; display:flex; justify-content:space-between; }
+    .home-button{
+      width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+      border-radius:14px; background: linear-gradient(180deg, var(--glassA), var(--glassB));
+      border:1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(8px);
+      transition: transform .2s ease;
+    }
+    .home-button:hover{ transform: translateY(-2px) }
+    .home-button i{ color:var(--accent); font-size:1.2rem }
 
-        .profile-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            padding: 10px;
-            display: none;
-            z-index: 1000;
-        }
+    /* Card */
+    .login-container{
+      width:min(420px, 94vw);
+      background: linear-gradient(180deg, var(--glassA), var(--glassB));
+      border:1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: clamp(20px, 3vw, 30px);
+      position:relative; z-index:1; overflow:hidden;
+      transform-style: preserve-3d;
+    }
+    .login-container::before{
+      content:""; position:absolute; inset:-2px; border-radius:22px; padding:2px;
+      background: conic-gradient(from 180deg, var(--accent), #f39ce2, #72f1b8, var(--accent));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      opacity:.14; pointer-events:none;
+    }
+    .login-container:hover{ transform: translateY(-2px) }
 
-        .user-profile:hover .profile-dropdown {
-            display: block;
-        }
+    h2{
+      margin:6px 0 18px; text-align:center; font-size: clamp(24px, 3vw, 32px); font-weight:800;
+      background: linear-gradient(90deg, #fff, #dff1ff, #fff);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      background-size:200% 100%; animation: shimmer 4s linear infinite;
+    }
 
-        .profile-dropdown a {
-            display: block;
-            padding: 8px 15px;
-            color: #2c3e50;
-            text-decoration: none;
-            transition: background-color 0.3s ease;
-            white-space: nowrap;
-        }
+    /* Floating label fields */
+    .input-group{ position:relative; margin-bottom: 16px; }
+    .input-group input{
+      width:100%; padding: 18px 42px 14px 14px;
+      color:var(--text); background: rgba(255,255,255,.06);
+      border:1px solid var(--border); border-radius:14px;
+      outline:none; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, transform .18s ease;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); font-size:1rem;
+    }
+    .input-group input::placeholder{ color:transparent }
+    .input-group label{
+      position:absolute; left:12px; top:12px; padding:0 6px; color:var(--muted);
+      transition: all .18s ease; border-radius:8px; pointer-events:none;
+    }
+    .input-group input:focus{
+      border-color: rgba(124,200,255,.55);
+      box-shadow: 0 0 0 5px rgba(124,200,255,.16);
+      background: rgba(255,255,255,.08);
+      transform: translateY(-1px);
+    }
+    .input-group input:focus + label,
+    .input-group input:not(:placeholder-shown) + label{
+      top:-10px; font-size:.8rem; color:#dff1ff;
+      background: linear-gradient(180deg, rgba(11,15,26,0.9), rgba(11,15,26,0.6));
+    }
 
-        .profile-dropdown a:hover {
-            background-color: #f1f1f1;
-        }
+    /* password toggle */
+    .password-toggle{
+      position:absolute; right:10px; top:50%; transform: translateY(-50%);
+      cursor:pointer; color:#bcd3ea; font-size:1rem; opacity:.9; transition: transform .15s ease;
+    }
+    .password-toggle:hover{ transform: translateY(-50%) scale(1.05) }
 
-    </style>
+    /* CTA */
+    button{
+      width:100%; padding:14px 16px; border:none; border-radius:16px;
+      font-weight:800; font-size:1rem; letter-spacing:.4px; cursor:pointer;
+      color:#061b12; background: linear-gradient(135deg, #72f1b8, #2ecc71);
+      box-shadow: 0 18px 40px rgba(114,241,184,.22);
+      transition: transform .16s ease; position:relative; overflow:hidden; isolation:isolate;
+    }
+    button:hover{ transform: translateY(-2px) }
+    button::before{
+      content:""; position:absolute; inset:0; opacity:.35; pointer-events:none;
+      background: linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0), rgba(255,255,255,.18));
+      background-size:200% 100%; mix-blend-mode:screen; animation: shimmer 2.2s linear infinite;
+    }
+    .ripple{
+      position:absolute; width:12px; height:12px; border-radius:50%;
+      background: rgba(255,255,255,.5); transform: translate(-50%,-50%); pointer-events:none;
+      animation: ripple .6s ease-out forwards; mix-blend-mode: screen;
+    }
+    .btn-loading{ pointer-events:none; opacity:.9 }
+    .spinner{
+      position:absolute; right:12px; top:50%; transform: translateY(-50%);
+      width:16px; height:16px; border-radius:50%; border:2px solid rgba(0,0,0,.12); border-top-color:#0a2719;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin{ to{ transform: translateY(-50%) rotate(360deg) } }
+
+    .error-message{
+      color:#ffdcdc; background: rgba(255,107,107,.18);
+      border:1px solid rgba(255,107,107,.40);
+      border-radius:12px; padding:10px 12px; margin-top:12px; text-align:center;
+      display:none;
+    }
+
+    .signup-link{ text-align:center; margin-top:12px; color:var(--muted) }
+    .signup-link a{ color:#dff1ff; text-decoration:none }
+    .signup-link a:hover{ text-decoration:underline }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .aurora, h2, button::before { animation:none !important }
+    }
+  </style>
 </head>
 <body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="aurora" aria-hidden="true"></div>
 
-    <div class="nav-buttons">
-        <a href="/" class="home-button">
-            <i class="fas fa-home"></i>
-        </a>
-    </div>
-    <div class="login-container">
-        <h2>Login</h2>
-        <form class="form" action = "{{ url_for("login") }}" method="POST">
-            <div class="input-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="email@example.com" required>
-            </div>
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Password" required>
-                <span class="password-toggle" onclick="togglePassword()">👁️</span>
-            </div>
-            <button type="submit">Login</button>
-        </form>
-        <div class="error-message" id="error-message"></div>
-        <div class="signup-link">
-            <p>Don't have an account? <a href="/signup">Sign Up</a></p>
-        </div>
-    </div>
+  <div class="nav-buttons">
+    <a href="/" class="home-button" aria-label="Home">
+      <i class="fas fa-home"></i>
+    </a>
+  </div>
 
-    <script>
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const passwordToggle = document.querySelector('.password-toggle');
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                passwordToggle.textContent = '🔒';
-            } else {
-                passwordInput.type = 'password';
-                passwordToggle.textContent = '👁️';
-            }
+  <div class="login-container" id="card">
+    <h2>Login</h2>
+    <form id="login-form" action="{{ url_for('login') }}" method="POST" novalidate>
+      <div class="input-group">
+        <input type="email" id="email" name="email" placeholder=" " required autocomplete="email">
+        <label for="email">Email</label>
+      </div>
+      <div class="input-group">
+        <input type="password" id="password" name="password" placeholder=" " required autocomplete="current-password">
+        <label for="password">Password</label>
+        <span class="password-toggle" id="togglePass" aria-label="Show/Hide password"><i class="far fa-eye"></i></span>
+      </div>
+      <button type="submit" id="submitBtn">Login</button>
+    </form>
+
+    <div class="error-message" id="error-message"></div>
+
+    <div class="signup-link">
+      <p>Don't have an account? <a href="/signup">Sign Up</a></p>
+    </div>
+  </div>
+
+  <script>
+    // Entrance animation + card tilt
+    gsap.from("#card", {duration:.7, y:-24, opacity:0, ease:"power3.out"});
+    gsap.from(".input-group", {duration:.5, y:16, opacity:0, stagger:.06, delay:.2, ease:"power2.out"});
+    const card = document.getElementById('card');
+    card.addEventListener('pointermove', (e)=>{
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width;
+      const y = (e.clientY - r.top) / r.height;
+      const rx = (y - .5) * -4;
+      const ry = (x - .5) * 4;
+      card.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    });
+    card.addEventListener('pointerleave', ()=> card.style.transform = '');
+
+    // Password toggle
+    const pass = document.getElementById('password');
+    const toggle = document.getElementById('togglePass');
+    toggle.addEventListener('click', ()=>{
+      const showing = pass.type === 'text';
+      pass.type = showing ? 'password' : 'text';
+      toggle.innerHTML = showing ? '<i class="far fa-eye"></i>' : '<i class="far fa-eye-slash"></i>';
+    });
+
+    // Button ripple + async submit (keeps server fallback)
+    const form = document.getElementById('login-form');
+    const btn  = document.getElementById('submitBtn');
+    function addRipple(e, el){
+      const r = document.createElement('span');
+      r.className = 'ripple';
+      const rect = el.getBoundingClientRect();
+      r.style.left = (e.clientX - rect.left) + 'px';
+      r.style.top  = (e.clientY - rect.top)  + 'px';
+      el.appendChild(r);
+      setTimeout(()=> r.remove(), 650);
+    }
+    btn.addEventListener('click', (e)=> addRipple(e, btn));
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+
+      // basic validity
+      if(!form.checkValidity()){
+        showError('Please enter a valid email and password.');
+        return;
+      }
+
+      // loading style
+      btn.classList.add('btn-loading');
+      const sp = document.createElement('span');
+      sp.className = 'spinner';
+      btn.appendChild(sp);
+
+      try{
+        const fd = new FormData(form);
+        const res = await fetch(form.action, { method:'POST', body:fd });
+        // If server returns HTML (non-JSON), fall back to redirect
+        const contentType = res.headers.get('content-type') || '';
+        if(contentType.includes('application/json')){
+          const result = await res.json();
+          if(result.success){
+            window.location.href = '/dashboard';
+          }else{
+            showError(result.message || 'Invalid credentials.');
+          }
+        }else{
+          // Assume server handled redirect or error page
+          window.location.href = res.url || '/dashboard';
         }
+      }catch(err){
+        showError('Network error. Please try again.');
+      }finally{
+        btn.classList.remove('btn-loading');
+        if(sp && sp.parentNode) sp.remove();
+      }
+    });
 
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const response = await fetch('/login', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            if (result.success) {
-                window.location.href = '/dashboard';
-            } else {
-                document.getElementById('error-message').textContent = result.message;
-                gsap.from('#error-message', {duration: 0.3, opacity: 0, y: -10, ease: 'power2.out'});
-            }
-        });
-    </script>
+    function showError(msg){
+      const box = document.getElementById('error-message');
+      box.textContent = msg;
+      box.style.display = 'block';
+      gsap.fromTo(box, {y:-8, opacity:0}, {duration:.35, y:0, opacity:1, ease:'power2.out'});
+      gsap.fromTo('#card', {x:0}, {x:0, duration:.4, ease:'power1.inOut',
+        onStart(){
+          gsap.to('#card', {x:-6, duration:.06, yoyo:true, repeat:5});
+        }
+      });
+    }
+  </script>
 </body>
 </html>
