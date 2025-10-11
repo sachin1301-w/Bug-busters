@@ -1,213 +1,376 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repair Estimate</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Repair Estimate</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(45deg, #6ab7f5, #f086d3);
-        }
-        .estimate-container {
-            max-width: 800px;
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            width: 100%;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 1.5rem;
-        }
-        .images {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-        }
-        .images img {
-            max-width: 45%;
-            height: auto;
-            border-radius: 8px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        table, th, td {
-            border: 1px solid #ccc;
-        }
-        th, td {
-            padding: 10px;
-            text-align: center;
-        }
-        .total-cost {
-            font-size: 20px;
-            font-weight: bold;
-            text-align: center;
-            margin-top: 20px;
-        }
-        .repair-costs h3 {
-            text-align: center;
-            color: #333;
-        }
-        .print-button {
-            display: block;
-            width: 200px;
-            margin: 20px auto 0;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .print-button:hover {
-            background-color: #45a049;
-        }
-        @media print {
-            body {
-                background: none;
-            }
-            .estimate-container {
-                box-shadow: none;
-            }
-            .print-button {
-                display: none;
-            }
-        }
+  <style>
+    :root{
+      --bg:#0b0f1a;
+      --card: rgba(255,255,255,0.10);
+      --card-2: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.16);
+      --text:#f5f7fb;
+      --muted:#c8d0e0;
+      --accent:#7cc8ff;
+      --accent-2:#f39ce2;
+      --accent-3:#72f1b8;
+      --good:#27ae60;
+      --warn:#f39c12;
+      --danger:#e74c3c;
+      --radius:22px;
+      --shadow:0 24px 60px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.06);
+      --gutter: clamp(18px, 3vw, 32px);
+    }
 
-        .nav-buttons {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-        }
+    /* Animations */
+    @keyframes floatSlow { 0%,100%{ transform:translateY(0)} 50%{ transform:translateY(-7px)} }
+    @keyframes fadeInUp{ from{opacity:0; transform:translateY(16px)} to{opacity:1; transform:translateY(0)} }
+    @keyframes shimmer{ 0%{ background-position:-200% 0 } 100%{ background-position:200% 0 } }
+    @keyframes glowPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(124,200,255,.0)} 50%{ box-shadow:0 0 0 10px rgba(124,200,255,.10)} }
 
-        .home-button, .user-profile {
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      min-height:100vh; display:flex; justify-content:center; align-items:flex-start;
+      padding: var(--gutter);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(124,200,255,.15), transparent 50%),
+        radial-gradient(900px 600px at 115% 15%, rgba(243,156,226,.15), transparent 55%),
+        radial-gradient(1000px 800px at 50% 115%, rgba(114,241,184,.07), transparent 60%),
+        linear-gradient(180deg, #070b13, var(--bg));
+      overflow:auto;
+    }
+    .noise{ position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.06;
+      background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+      mix-blend-mode:soft-light; }
+    .aurora{ position:fixed; inset:-25vmax; z-index:0; filter: blur(60px) saturate(120%);
+      background:
+        radial-gradient(closest-side at 25% 28%, rgba(124,200,255,.28), transparent 60%),
+        radial-gradient(closest-side at 70% 30%, rgba(243,156,226,.26), transparent 60%),
+        radial-gradient(closest-side at 55% 70%, rgba(114,241,184,.18), transparent 60%);
+      animation: floatSlow 20s ease-in-out infinite; }
 
-        .home-button:hover, .user-profile:hover {
-            background-color: rgba(255, 255, 255, 1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-        }
+    .container{
+      width:min(1200px, 96vw);
+      background: linear-gradient(180deg, var(--card), var(--card-2));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: var(--gutter);
+      position:relative; z-index:1; animation: fadeInUp .5s ease-out both;
+      overflow:hidden; will-change: transform;
+    }
+    .container::before{
+      content:""; position:absolute; inset:-2px; border-radius: calc(var(--radius) + 2px);
+      padding:2px;
+      background: conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor; mask-composite: exclude;
+      opacity:.14; pointer-events:none;
+    }
+    .container:hover{ transform: translateY(-2px) }
 
-        .home-button i, .user-profile i {
-            font-size: 1.2rem;
-            color: #3498db;
-        }
+    h2{
+      margin:0 0 12px; text-align:center; font-size: clamp(28px, 3vw, 40px); font-weight:800;
+      background: linear-gradient(90deg, #fff, #dff1ff, #fff);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      background-size: 200% 100%; animation: shimmer 4s linear infinite;
+    }
 
-        .user-profile {
-            position: relative;
-        }
+    .section-title{
+      margin: 22px 0 12px; font-weight:800; font-size: clamp(18px, 2.2vw, 24px);
+      color:#dff1ff;
+      background: linear-gradient(90deg, var(--accent), #fff, var(--accent-2));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      background-size: 200% 100%; animation: shimmer 3.5s linear infinite;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      padding-bottom: 8px;
+    }
 
-        .profile-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            padding: 10px;
-            display: none;
-            z-index: 1000;
-        }
+    /* Gallery */
+    .image-gallery{
+      display:grid; gap: clamp(14px, 2.5vw, 24px);
+      grid-template-columns: repeat( auto-fit, minmax(280px, 1fr) );
+      margin-bottom: 12px;
+    }
+    .image-item{
+      position:relative; border-radius:16px; overflow:hidden;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      box-shadow: var(--shadow);
+      transform-style:preserve-3d;
+      transition: transform .25s ease, box-shadow .25s ease;
+      animation: fadeInUp .4s ease-out both;
+    }
+    .image-item:hover{ transform: translateY(-4px) rotateX(3deg) rotateY(-3deg) }
+    .image-item img{ display:block; width:100%; height:auto; }
+    .image-item p{
+      margin:0; padding:10px 12px; color:var(--muted); font-size:.98rem;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border-top:1px solid var(--border);
+    }
 
-        .user-profile:hover .profile-dropdown {
-            display: block;
-        }
+    /* Table */
+    .table-wrap{
+      overflow:auto; border-radius:16px; border:1px solid var(--border);
+      background: rgba(255,255,255,.06); box-shadow: var(--shadow);
+    }
+    table{ width:100%; border-collapse:collapse; }
+    th, td{ padding:14px 16px; text-align:left; border-bottom:1px solid rgba(255,255,255,.08) }
+    th{
+      position:sticky; top:0; z-index:1;
+      background: linear-gradient(180deg, rgba(124,200,255,.25), rgba(124,200,255,.15));
+      color:#001220; font-weight:800; letter-spacing:.3px;
+      backdrop-filter: blur(4px);
+    }
+    tr:nth-child(even) td{ background: rgba(255,255,255,.04) }
+    tbody tr{ opacity:0; transform: translateY(10px); }
+    tbody tr.show{ opacity:1; transform: translateY(0); transition: all .35s ease }
 
-        .profile-dropdown a {
-            display: block;
-            padding: 8px 15px;
-            color: #2c3e50;
-            text-decoration: none;
-            transition: background-color 0.3s ease;
-            white-space: nowrap;
-        }
+    .total-estimate{
+      text-align:right; margin-top:18px; font-size: clamp(18px,2.2vw,24px);
+      color:#dff1ff; font-weight:700;
+    }
+    .total-estimate .amount{
+      display:inline-block; min-width:160px; margin-left:10px;
+      font-size: clamp(22px, 3vw, 30px); color: var(--danger);
+      background: linear-gradient(90deg, #ffb3b3, #ff6767, #ffb3b3);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      background-size:200% 100%; animation: shimmer 3.2s linear infinite;
+    }
 
-        .profile-dropdown a:hover {
-            background-color: #f1f1f1;
-        }
-    </style>
+    /* Back button */
+    .back-button{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:14px 18px; margin:26px auto 0; border-radius:14px; text-decoration:none;
+      background: linear-gradient(135deg, #f7b955, #f39c12);
+      color:#1a1200; font-weight:800; width: fit-content;
+      box-shadow: 0 12px 30px rgba(243,156,18,.25);
+      transition: transform .16s ease; position:relative; overflow:hidden; isolation:isolate;
+      animation: fadeInUp .5s ease-out both;
+    }
+    .back-button:hover{ transform: translateY(-2px) }
+    .back-button::before{
+      content:""; position:absolute; inset:0; opacity:.35; pointer-events:none;
+      background: linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0), rgba(255,255,255,.18));
+      background-size:200% 100%; mix-blend-mode:screen; animation: shimmer 2.2s linear infinite;
+    }
+    .back-button .ripple{
+      position:absolute; width:10px; height:10px; border-radius:50%;
+      background: rgba(255,255,255,.6); transform: translate(-50%,-50%); pointer-events:none;
+      animation: ripple .6s ease-out forwards; mix-blend-mode:screen;
+    }
+    @keyframes ripple{ from{opacity:.5; transform: translate(-50%,-50%) scale(1)} to{opacity:0; transform: translate(-50%,-50%) scale(22)} }
+
+    /* No damage */
+    .no-damage-message{
+      text-align:center; font-size:1.1rem; color: var(--good);
+      padding:16px; border:1px dashed rgba(39,174,96,.6); border-radius:12px;
+      background: rgba(39,174,96,.08);
+      animation: fadeInUp .4s ease-out both;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .aurora, .container::before, .back-button::before { animation:none }
+      .image-item, tbody tr { transition:none }
+    }
+  </style>
 </head>
 <body>
-    <div class="nav-buttons">
-        <a href="/" class="home-button">
-            <i class="fas fa-home"></i>
-        </a>
-        <div class="user-profile">
-            <i class="fas fa-user-circle"></i>
-            <div class="profile-dropdown">
-                <a href="/view_profile">View Profile</a>
-                <a href="/dashboard">Dashboard</a>
-                <a href="/logout">Logout</a>
-            </div>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="aurora" aria-hidden="true"></div>
+
+  <div class="container" id="card">
+    <h2>Damage Repair Estimate</h2>
+
+    {% if part_prices is defined %}
+      <h3 class="section-title">Image Analysis Results</h3>
+      <div class="image-gallery" id="gallery">
+        <div class="image-item">
+          <img src="{{ url_for('static', filename=original_image) }}" alt="Original Image" loading="lazy">
+          <p>Original Upload</p>
         </div>
-    </div>
-    <div class="estimate-container">
-        <h2>Quotation for Damage Recovery</h2>
-        <div class="images">
-            <img src="{{ url_for('static', filename=original_image) }}" alt="Original Image">
-            <img src="{{ url_for('static', filename=detected_image) }}" alt="Detected Image">
+        <div class="image-item">
+          <img src="{{ url_for('static', filename=detected_image) }}" alt="Detected Image" loading="lazy">
+          <p>Damage Detected (AI Analysis)</p>
         </div>
-        <div class="repair-costs">
-            <h3>Estimated Repair Prices</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Part Name</th>
-                        <th>Count</th>
-                        <th>Price per Part (Rs)</th>
-                        <th>Total Price (Rs)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for part, details in part_prices.items() %}
-                    <tr>
-                        <td>{{ part }}</td>
-                        <td>{{ details['count'] }}</td>
-                        <td>{{ details['price'] }}</td>
-                        <td>{{ details['total'] }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <div class="total-cost">
-                Total Estimated Price: ₹{{ part_prices.values() | map(attribute='total') | sum }}
-            </div>            
+      </div>
+
+      {% if part_prices %}
+        <h3 class="section-title">Estimated Repair Costs</h3>
+        <div class="table-wrap">
+          <table class="report-table" id="report">
+            <thead>
+              <tr>
+                <th>Part</th>
+                <th>Count</th>
+                <th>Price per Part</th>
+                <th>Total for Part</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for part, data in part_prices.items() %}
+              <tr>
+                <td>{{ part }}</td>
+                <td>{{ data.count }}</td>
+                <td>₹{{ "{:,.2f}".format(data.price) }}</td>
+                <td class="row-total">₹{{ "{:,.2f}".format(data.total) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-        <button class="print-button" onclick="window.print()">Print Quotation</button>
-    </div>
-    <script>
-        function printQuotation() {
-            window.print();
-        }
-    </script>
+
+        <div class="total-estimate">
+          Overall Estimated Total:
+          <span class="amount" id="grand">{{ "{:,.2f}".format(part_prices.values() | map(attribute='total') | sum) }}</span>
+        </div>
+      {% else %}
+        <div class="no-damage-message">
+          <i class="fas fa-check-circle"></i> No damage detected in the uploaded image.
+        </div>
+      {% endif %}
+
+    {% elif estimate is defined %}
+      <h3 class="section-title">Video Analysis Results</h3>
+
+      {% if estimate.detected_images %}
+        <div class="image-gallery" id="gallery">
+          {% for img_path in estimate.detected_images %}
+          <div class="image-item">
+            <img src="{{ url_for('static', filename=img_path) }}" alt="Detected Damage Frame" loading="lazy">
+            <p>Damage Detected in Video Frame</p>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if estimate.itemized_report %}
+        <h3 class="section-title">Estimated Repair Costs</h3>
+        <div class="table-wrap">
+          <table class="report-table" id="report">
+            <thead>
+              <tr>
+                <th>Part</th>
+                <th>Estimated Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in estimate.itemized_report %}
+              <tr>
+                <td>{{ item.part_name }}</td>
+                <td class="row-total">₹{{ "{:,.2f}".format(item.price) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="total-estimate">
+          Overall Estimated Total:
+          <span class="amount" id="grand">{{ "{:,.2f}".format(estimate.total_price) }}</span>
+        </div>
+      {% else %}
+        <div class="no-damage-message">
+          <i class="fas fa-check-circle"></i> No significant damage detected in the uploaded video.
+        </div>
+      {% endif %}
+
+    {% else %}
+      <p style="color:var(--muted); text-align:center">No estimate data available. Please upload a file.</p>
+    {% endif %}
+
+    <a href="{{ url_for('dashboard') }}" class="back-button" id="backBtn">
+      <i class="fas fa-arrow-left"></i> Go Back to Dashboard
+    </a>
+  </div>
+
+  <script>
+    // Subtle tilt on the whole card
+    (function(){
+      const card = document.getElementById('card');
+      card.addEventListener('pointermove', (e)=>{
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width;
+        const y = (e.clientY - r.top) / r.height;
+        const rx = (y - .5) * -3;
+        const ry = (x - .5) * 3;
+        card.style.transform = `perspective(1200px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+      });
+      card.addEventListener('pointerleave', ()=> card.style.transform = '');
+    })();
+
+    // Stagger table rows when visible + count-up grand total
+    (function(){
+      const tbody = document.querySelector('#report tbody');
+      if (!tbody) return;
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const obs = new IntersectionObserver(entries=>{
+        entries.forEach(entry=>{
+          if(entry.isIntersecting){
+            rows.forEach((row,i)=>{
+              setTimeout(()=> row.classList.add('show'), i*70);
+            });
+            obs.disconnect();
+          }
+        });
+      }, {threshold:.2});
+      obs.observe(tbody);
+
+      const grand = document.getElementById('grand');
+      if(!grand) return;
+      const targetText = grand.textContent.replace(/[₹,]/g,'');
+      const target = parseFloat(targetText) || 0;
+
+      let start=null;
+      const dur=900;
+      function tick(ts){
+        if(!start) start = ts;
+        const p = Math.min(1, (ts - start)/dur);
+        const val = target * p;
+        grand.textContent = '₹' + val.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+        if(p<1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    })();
+
+    // Gallery parallax tilt on each card
+    (function(){
+      const items = document.querySelectorAll('.image-item');
+      items.forEach(item=>{
+        item.addEventListener('pointermove', e=>{
+          const r = item.getBoundingClientRect();
+          const x = (e.clientX - r.left) / r.width;
+          const y = (e.clientY - r.top) / r.height;
+          const rx = (y - .5) * -6;
+          const ry = (x - .5) * 6;
+          item.style.transform = `translateY(-4px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+        });
+        item.addEventListener('pointerleave', ()=>{
+          item.style.transform = '';
+        });
+      });
+    })();
+
+    // Back button ripple
+    (function(){
+      const btn = document.getElementById('backBtn');
+      btn.addEventListener('click', e=>{
+        const r = document.createElement('span');
+        r.className = 'ripple';
+        const rect = btn.getBoundingClientRect();
+        r.style.left = (e.clientX - rect.left) + 'px';
+        r.style.top  = (e.clientY - rect.top) + 'px';
+        btn.appendChild(r);
+        setTimeout(()=> r.remove(), 650);
+      });
+    })();
+  </script>
 </body>
 </html>
