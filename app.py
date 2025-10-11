@@ -1,22 +1,28 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-import config
+from PIL import Image
+from collections import Counter
+import os
+import bcrypt
 import mysql.connector as connector
 from werkzeug.utils import secure_filename
-import os
 from ultralytics import YOLO
-import bcrypt
-from collections import Counter
 from dotenv import load_dotenv
-from PIL import Image
 
+PARTS_FILE = os.path.join("accident-damage-detection", "car_parts_prices.json")
+
+# Dummy company login credentials
+COMPANY_USER = {"username": "admin", "password": "12345"}
+# --- Local Imports ---
+import config
+from video_processor import process_video_for_repair_estimate
+
+# --- Environment Setup ---
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
 
-# Load .env if needed
-load_dotenv()
-
 # ===============================================================
-# >> NEW: CAR PRICE DATA DICTIONARY PLACED HERE <<
+# >> CAR PRICE DATA DICTIONARY <<
+# Note: For larger projects, it's best to move this to its own file (e.g., car_data.py)
 # ===============================================================
 car_prices_data = {
     "HONDA": {
@@ -72,18 +78,18 @@ car_prices_data = {
 app = Flask(__name__)
 app.secret_key = "220838d7b8826c175083b8a1d69f801fa936bda827d8c2acb569809c088d5396"
 
-# Paths
+# --- Paths ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
-TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 UPLOAD_IMAGE = os.path.join(STATIC_DIR, "uploaded_image.jpg")
 DETECTED_IMAGE = os.path.join(STATIC_DIR, "detected_image.jpg")
 
 # Ensure static folder exists
 os.makedirs(STATIC_DIR, exist_ok=True)
 
-# ---------------- Database Connection ----------------
+
+# --- Database Connection ---
 def connect_to_db():
     try:
         connection = connector.connect(**config.mysql_credentials)
@@ -92,12 +98,13 @@ def connect_to_db():
         print(f"Database connection error: {e}")
         return None
 
-# ---------------- Home Route ----------------
+
+# --- Routes ---
+
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# ---------------- Signup Route ----------------
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -145,7 +152,7 @@ def signup():
 
     return render_template('signup.html')
 
-# ---------------- Login Route ----------------
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -178,18 +185,20 @@ def login():
 
     return render_template('login.html')
 
-# ---------------- Logout Route ----------------
+
 @app.route('/logout')
 def logout():
     session.pop('user_email', None)
     flash("Logged out successfully.", "info")
     return redirect(url_for('login'))
 
-# ---------------- YOLO Model Load ----------------
+
+# --- YOLO Model Load ---
 model_path = os.path.join(MODELS_DIR, "best.pt")
 model = YOLO(model_path)
 
-# ---------------- Dashboard Route ----------------
+
+# --- Dashboard and Processing Route ---
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user_email' not in session:
@@ -197,94 +206,156 @@ def dashboard():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        file = request.files.get('image')
-        if not file:
-            flash('Please upload an image.', 'error')
+        file = request.files.get('file')
+        if not file or file.filename == '':
+            flash('Please upload a file.', 'error')
             return render_template('dashboard.html')
 
         filename = secure_filename(file.filename)
-        if not filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-            flash('Invalid file type. Please upload an image.', 'error')
+        file_ext = os.path.splitext(filename)[1].lower()
+        
+        # --- IMAGE PROCESSING LOGIC ---
+        if file_ext in ['.png', '.jpg', '.jpeg']:
+            file.save(UPLOAD_IMAGE)
+            result = model(UPLOAD_IMAGE)
+            
+            res_plotted = result[0].plot()
+            pil_img = Image.fromarray(res_plotted)
+            pil_img.save(DETECTED_IMAGE)
+
+            detected_objects = result[0].boxes
+            class_ids = [box.cls.item() for box in detected_objects]
+            class_counts = Counter(class_ids)
+
+            part_prices = get_part_prices(session['user_email'], class_counts)
+
+            return render_template('estimate.html',
+                                   original_image='uploaded_image.jpg',
+                                   detected_image='detected_image.jpg',
+                                   part_prices=part_prices)
+        
+        # --- VIDEO PROCESSING LOGIC ---
+        elif file_ext in ['.mp4', '.mov', '.avi', '.mkv']:
+            upload_folder = os.path.join(STATIC_DIR, 'uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            video_path = os.path.join(upload_folder, filename)
+            file.save(video_path)
+            
+            user_car_details = get_user_car_details(session['user_email'])
+            if not user_car_details:
+                flash('Could not retrieve your car details from your profile.', 'error')
+                return redirect(url_for('dashboard'))
+
+            estimate_data = process_video_for_repair_estimate(video_path, model, user_car_details)
+            
+            if not estimate_data:
+                flash('Could not process the video.', 'error')
+                return redirect(url_for('dashboard'))
+            
+            # Use the unified estimate.html for both image and video results
+            return render_template('estimate.html', estimate=estimate_data)
+        
+        # --- INVALID FILE TYPE ---
+        else:
+            flash('Invalid file type. Please upload an image or a video.', 'error')
             return render_template('dashboard.html')
-
-        file.save(UPLOAD_IMAGE)
-
-        # YOLO Prediction
-        result = model(UPLOAD_IMAGE)
-        detected_objects = result[0].boxes
-        class_ids = [box.cls.item() for box in detected_objects]
-        class_counts = Counter(class_ids)
-
-        # Save detection image
-        # Note: The plot function was changed in newer ultralytics versions. 
-        # The following is a more robust way to save the plotted image.
-        res_plotted = result[0].plot()
-        pil_img = Image.fromarray(res_plotted)
-        pil_img.save(DETECTED_IMAGE)
-
-        # Fetch part prices
-        part_prices = get_part_prices(session['user_email'], class_counts)
-
-        return render_template('estimate.html',
-                               original_image='uploaded_image.jpg',
-                               detected_image='detected_image.jpg',
-                               part_prices=part_prices)
 
     return render_template('dashboard.html')
 
-# ===============================================================
-# >> MODIFIED: THIS FUNCTION WAS REPLACED <<
-# ===============================================================
-# ---------------- Helper: Get Part Prices ----------------
-def get_part_prices(email, class_counts):
-    # Step 1: Get the user's car brand and model from the database
+
+# --- Helper Functions ---
+
+def get_user_car_details(email):
+    """Fetches just the car brand and model for a user."""
     connection = connect_to_db()
     if not connection:
-        return {}
-
-    car_brand = None
-    car_model = None
+        return None
     try:
         with connection.cursor(dictionary=True) as cursor:
             cursor.execute("SELECT car_brand, model FROM user_info WHERE email = %s", (email,))
-            user_data = cursor.fetchone()
-            if user_data:
-                car_brand = user_data['car_brand']
-                car_model = user_data['model']
+            return cursor.fetchone()
     except connector.Error as e:
         print(f"DB error fetching user car: {e}")
-        return {}
+        return None
     finally:
         if connection.is_connected():
             connection.close()
 
-    if not car_brand or not car_model:
+
+def get_part_prices(email, class_counts):
+    """Gets part prices for image processing, using the user's car details."""
+    user_car = get_user_car_details(email)
+    if not user_car:
         return {}
 
-    # Step 2: Look up prices in the car_prices_data dictionary
+    car_brand = user_car['car_brand']
+    car_model = user_car['model']
+    
     prices = {}
     for class_id, count in class_counts.items():
         part_name = get_part_name_from_id(class_id)
         if part_name:
             try:
-                # Find the price in our dictionary
                 price_per_part = car_prices_data[car_brand.upper()][car_model][part_name]
                 total_price = price_per_part * count
                 prices[part_name] = {'count': count, 'price': price_per_part, 'total': total_price}
             except KeyError:
-                # This will catch errors if the brand, model, or part isn't in the dictionary
                 print(f"Price not found for: {car_brand}, {car_model}, {part_name}")
                 continue
-    
     return prices
 
-# ---------------- Helper: Map Class ID to Part Name ----------------
+
 def get_part_name_from_id(class_id):
+    """Maps a YOLO class ID to a part name string."""
     class_names = ['Bonnet', 'Bumper', 'Dickey', 'Door', 'Fender', 'Light', 'Windshield']
     if 0 <= class_id < len(class_names):
         return class_names[int(class_id)]
     return None
+# ===========================
+# COMPANY ADMIN ROUTES
+# ===========================
 
-# ---------------- Main ----------------
+@app.route('/company_login', methods=['GET', 'POST'])
+def company_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if username == COMPANY_USER["username"] and password == COMPANY_USER["password"]:
+            session['company_user'] = username
+            flash("Company login successful!", "success")
+            return redirect(url_for('edit_prices'))
+        else:
+            flash("Invalid company credentials!", "error")
+    return render_template('company_dashboard.html')
+
+@app.route('/company_dashboard', methods=['GET', 'POST'])
+def company_dashboard():
+    if 'company_user' not in session:
+        flash("Please login as company admin.", "error")
+        return redirect(url_for('company_login'))
+
+    data = car_prices_data
+    selected_company = request.args.get('company', list(data.keys())[0])
+    company_data = data[selected_company]
+
+    if request.method == 'POST':
+        company = request.form['company']
+        model = request.form['model']
+        part = request.form['part']
+        price = request.form['price']
+
+        try:
+            data[company][model][part] = int(price)
+            flash(f"✅ Updated {company} → {model} → {part} = ₹{price}", "success")
+        except KeyError:
+            flash("Invalid Company, Model, or Part Name!", "error")
+
+        return redirect(url_for('company_dashboard', company=company))
+
+    return render_template('company_dashboard.html', data=data, company_data=company_data, company=selected_company)
+
+# --- Main Execution ---
 if __name__ == '__main__':
     app.run(debug=True)
