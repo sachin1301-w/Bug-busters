@@ -1,191 +1,383 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signup - Car Damage Detection</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(45deg, #6ab7f5, #f086d3);
-            padding: 20px;
-        }
-        .signup-container {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            width: 800px;
-            max-width: 90%;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-top: 0;
-            margin-bottom: 1.5rem;
-        }
-        .form-row {
-            display: flex;
-            gap: 2rem;
-        }
-        .form-column {
-            flex: 1;
-        }
-        .input-group {
-            margin-bottom: 1.25rem;
-            position: relative;
-        }
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #555;
-        }
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-        .password-toggle {
-            position: absolute;
-            right: 10px;
-            top: 65%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #888;
-        }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Signup - Car Damage Detection</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-        .inputBox input[type="submit"] {
-            background-color: #4CAF50; /* Green background */
-            color: white;              /* White text */
-            border: none;              /* No border */
-            padding: 10px 20px;        /* Padding around text */
-            font-size: 16px;           /* Font size */
-            cursor: pointer;           /* Pointer on hover */
-            border-radius: 5px;        /* Rounded corners */
-            transition: background-color 0.3s ease; /* Smooth hover transition */
-        }
-    
-        .inputBox input[type="submit"]:hover {
-            background-color: #45a049; /* Darker green on hover */
-        }
+  <style>
+    :root{
+      --bg:#0b0f1a;
+      --glassA: rgba(255,255,255,0.12);
+      --glassB: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.16);
+      --text:#f5f7fb;
+      --muted:#c8d0e0;
+      --accent:#7cc8ff;
+      --ok:#2ecc71;
+      --radius:22px;
+      --shadow:0 28px 70px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.06);
 
-        .error-message {
-            color: red;
-            text-align: center;
-            margin-top: 1rem;
-        }
-        .login-link {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-        }
-        .login-link a {
-            color: #4CAF50;
-            text-decoration: none;
-        }
-        .login-link a:hover {
-            text-decoration: underline;
-        }
-    </style>
+      --container-pad: clamp(26px, 4vw, 42px);
+      --col-gap: clamp(24px, 3.5vw, 36px);
+      --row-gap: clamp(20px, 3vw, 28px);
+      --field-gap: clamp(18px, 2.4vw, 24px);
+      --input-pad-v: 22px;
+      --input-pad-h: 18px;
+      --label-top: 14px;
+      --label-float-top: -10px;
+      --min-col: 360px;
+    }
+
+    /* Existing keyframes (kept) + NEW ones */
+    @keyframes floatSlow { 0%,100%{ transform:translateY(0)} 50%{ transform:translateY(-6px)} }
+    @keyframes shimmer{ 0%{ background-position:-200% 0 } 100%{ background-position:200% 0 } }
+    @keyframes ripple{ from{opacity:.5; transform: translate(-50%,-50%) scale(1)} to{opacity:0; transform: translate(-50%,-50%) scale(22)} }
+    @keyframes spin{ to{ transform: translateY(-50%) rotate(360deg) } }
+    /* NEW */
+    @keyframes spinBorder{ to{ transform: rotate(360deg) } }
+    @keyframes pulseGlow{ 0%,100%{ box-shadow: 0 0 0 0 rgba(124,200,255,.0) } 50%{ box-shadow: 0 0 0 10px rgba(124,200,255,.10) } }
+    @keyframes labelPop{ 0%{ transform: translateY(0) scale(1) } 50%{ transform: translateY(-2px) scale(1.02) } 100%{ transform: translateY(0) scale(1) } }
+
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color:var(--text);
+      display:flex; justify-content:center; align-items:center;
+      padding: clamp(18px, 4vw, 36px);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(124,200,255,.15), transparent 50%),
+        radial-gradient(900px 600px at 115% 15%, rgba(243,156,226,.15), transparent 55%),
+        radial-gradient(1000px 800px at 50% 115%, rgba(114,241,184,.08), transparent 60%),
+        linear-gradient(180deg, #070b13, var(--bg));
+      overflow:auto;
+    }
+    body::-webkit-scrollbar{ display:none }
+
+    /* Floating particles (canvas sits behind) */
+    #stars{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.35; }
+
+    .signup-container{
+      width:min(1200px, 96vw);
+      background: linear-gradient(180deg, var(--glassA), var(--glassB));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: var(--container-pad);
+      position:relative; z-index:1; overflow:hidden;
+      will-change: transform;
+    }
+    /* keep border highlight, add rotation */
+    .signup-container::before{
+      content:"";
+      position:absolute; inset:-2px; border-radius: calc(var(--radius) + 2px);
+      padding:2px;
+      background: conic-gradient(from 0deg, var(--accent), #f39ce2, #72f1b8, var(--accent));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      opacity:.16; pointer-events:none;
+      animation: spinBorder 12s linear infinite;
+      transform-origin: center;
+    }
+
+    h2{
+      margin:0 0 clamp(16px, 2vw, 22px);
+      text-align:center; font-size: clamp(28px, 3.2vw, 38px); font-weight:800;
+      background: linear-gradient(90deg, #fff, #dff1ff, #fff);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      background-size: 200% 100%; animation: shimmer 4s linear infinite;
+    }
+
+    .form-row{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(var(--min-col), 1fr));
+      column-gap: var(--col-gap);
+      row-gap: var(--row-gap);
+      align-items:start;
+    }
+    @media (max-width: 960px){ .form-row{ grid-template-columns: 1fr } }
+    .form-column{ display:grid; gap: var(--field-gap) }
+
+    .input-group{ position:relative }
+    .input-group input{
+      width:100%; padding: var(--input-pad-v) calc(var(--input-pad-h) + 28px) 16px var(--input-pad-h);
+      color:var(--text); background: rgba(255,255,255,.06);
+      border:1px solid var(--border); border-radius:18px;
+      outline:none; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, transform .18s ease;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); font-size:1.02rem; min-height:56px;
+    }
+    .input-group input::placeholder{ color:transparent }
+    .input-group label{
+      position:absolute; left:12px; top:var(--label-top);
+      padding:0 8px; color:var(--muted);
+      transition: all .18s ease; border-radius:8px; pointer-events:none;
+    }
+    .input-group input:focus{
+      border-color: rgba(124,200,255,.55);
+      box-shadow: 0 0 0 6px rgba(124,200,255,.16);
+      background: rgba(255,255,255,.08);
+      transform: translateY(-1px);
+      animation: pulseGlow 1.6s ease-in-out 1;
+    }
+    .input-group input:focus + label{
+      animation: labelPop .22s ease-out 1;
+    }
+    .input-group input:focus + label,
+    .input-group input:not(:placeholder-shown) + label{
+      top:var(--label-float-top); font-size:.82rem; color:#dff1ff;
+      background: linear-gradient(180deg, rgba(11,15,26,0.9), rgba(11,15,26,0.6));
+    }
+
+    .password-toggle{
+      position:absolute; right:10px; top:50%; transform: translateY(-50%);
+      cursor:pointer; color:#bcd3ea; font-size:1rem; opacity:.95; transition: transform .15s ease;
+    }
+    .password-toggle:hover{ transform: translateY(-50%) scale(1.08) }
+
+    .strength{ display:none; margin-top:8px; height:8px; border-radius:10px; overflow:hidden; }
+    .strength > div{ height:100%; width:0%; background: linear-gradient(90deg, #ff6b6b, #f7b955, #2ecc71); transition: width .25s ease }
+
+    .actions{ display:flex; justify-content:flex-end; margin-top: clamp(6px, 1.5vw, 12px) }
+    .submit{
+      min-width:240px;
+      padding:16px 20px; border:none; border-radius:18px; cursor:pointer; font-weight:800; letter-spacing:.45px;
+      color:#061b12; background: linear-gradient(135deg, #72f1b8, #2ecc71);
+      box-shadow: 0 22px 48px rgba(114,241,184,.22);
+      transition: transform .16s ease; position:relative; overflow:hidden; isolation:isolate;
+    }
+    .submit:hover{ transform: translateY(-2px) }
+    .submit::before{
+      content:""; position:absolute; inset:0; opacity:.35; pointer-events:none;
+      background: linear-gradient(120deg, rgba(255,255,255,.18), rgba(255,255,255,0), rgba(255,255,255,.18));
+      background-size:200% 100%; mix-blend-mode:screen; animation: shimmer 2.2s linear infinite;
+    }
+    .ripple{ position:absolute; width:12px; height:12px; border-radius:50%; background: rgba(255,255,255,.5);
+      transform: translate(-50%, -50%); animation: ripple .6s ease-out forwards; mix-blend-mode:screen; pointer-events:none }
+    .btn-loading{ pointer-events:none; opacity:.9 }
+    .spinner{
+      position:absolute; right:14px; top:50%; transform: translateY(-50%);
+      width:16px; height:16px; border-radius:50%; border:2px solid rgba(0,0,0,.12); border-top-color:#0a2719; animation: spin .7s linear infinite;
+    }
+
+    .error-message{
+      color:#ffdcdc; background: rgba(255,107,107,.18);
+      border:1px solid rgba(255,107,107,.40);
+      border-radius:12px; padding:12px 14px; margin-top:14px; text-align:center; display:none;
+    }
+    .login-link{ display:flex; justify-content:space-between; align-items:center; margin-top: 12px; color:var(--muted) }
+    .login-link a{
+      color:#dff1ff; text-decoration:none;
+      background: linear-gradient(currentColor, currentColor) center bottom/0 2px no-repeat;
+      transition: background-size .2s ease;
+    }
+    .login-link a:hover{ background-size: 100% 2px }
+  </style>
 </head>
 <body>
-    <div class="signup-container">
-        <h2>Sign Up</h2>
-        <form class="form" action = "{{ url_for("signup") }}" method="POST">
-            <div class="form-row">
-                <div class="form-column">
-                    <div class="input-group">
-                        <label for="fullName">Full Name</label>
-                        <input type="text" id="name" name="name" placeholder="Full Name" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" placeholder="Email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
-                    </div>
-                    <div class="input-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="Password" required>
-                        <span class="password-toggle" onclick="togglePassword()">👁️</span>
-                    </div>
-                    <div class="input-group">
-                        <label for="phoneNumber">Phone Number</label>
-                        <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="XX00009999" required>
-                    </div>
-                </div>
-                <div class="form-column">
-                    <div class="input-group">
-                        <label for="address">Full Address</label>
-                        <input type="text" id="address" name="address" placeholder="Full Address" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="vehicleId">Vehicle ID</label>
-                        <input type="text" id="vehicleId" name="vehicleId" placeholder="XXNNYY12" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="carBrand">Car Brand</label>
-                        <input type="text" id="carBrand" name="carBrand" placeholder="Car Brand" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="carModel">Car Model</label>
-                        <input type="text" id="carModel" name="carModel" placeholder="Car Model" required>
-                    </div>
-                </div>
-            </div>
-            <div class="inputBox">
-                <input type="submit" value="Sign Up">
-            </div>
-        </form>
-        <div class="error-message" id="error-message"></div>
-        <div class="login-link">
-            <span>Already have an account then</span>
-            <a href="/login">Login</a>
+  <!-- NEW particle canvas -->
+  <canvas id="stars"></canvas>
+
+  <div class="signup-container" id="card">
+    <h2>Sign Up</h2>
+
+    <form id="signup-form" action="{{ url_for('signup') }}" method="POST" novalidate>
+      <div class="form-row">
+        <div class="form-column">
+          <div class="input-group">
+            <input type="text" id="name" name="name" placeholder=" " required autocomplete="name">
+            <label for="name">Full Name</label>
+          </div>
+          <div class="input-group">
+            <input type="email" id="email" name="email" placeholder=" " required autocomplete="email"
+                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+            <label for="email">Email</label>
+          </div>
+          <div class="input-group" id="pwGroup">
+            <input type="password" id="password" name="password" placeholder=" " required autocomplete="new-password">
+            <label for="password">Password</label>
+            <span class="password-toggle" id="togglePass" aria-label="Show/Hide password">👁️</span>
+            <div class="strength" id="pwStrength" aria-hidden="true"><div id="strengthBar"></div></div>
+          </div>
+          <div class="input-group">
+            <input type="tel" id="phoneNumber" name="phoneNumber" placeholder=" " required autocomplete="tel">
+            <label for="phoneNumber">Phone Number</label>
+          </div>
         </div>
+
+        <div class="form-column">
+          <div class="input-group">
+            <input type="text" id="address" name="address" placeholder=" " required autocomplete="street-address">
+            <label for="address">Full Address</label>
+          </div>
+          <div class="input-group">
+            <input type="text" id="vehicleId" name="vehicleId" placeholder=" " required>
+            <label for="vehicleId">Vehicle ID</label>
+          </div>
+          <div class="input-group">
+            <input type="text" id="carBrand" name="carBrand" placeholder=" " required>
+            <label for="carBrand">Car Brand</label>
+          </div>
+          <div class="input-group">
+            <input type="text" id="carModel" name="carModel" placeholder=" " required>
+            <label for="carModel">Car Model</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="submit" id="submitBtn">Sign Up</button>
+      </div>
+    </form>
+
+    <div class="error-message" id="error-message"></div>
+
+    <div class="login-link">
+      <span>Already have an account?</span>
+      <a href="/login">Login</a>
     </div>
+  </div>
 
-    <script>
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const passwordToggle = document.querySelector('.password-toggle');
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                passwordToggle.textContent = '🔒';
-            } else {
-                passwordInput.type = 'password';
-                passwordToggle.textContent = '👁️';
-            }
+  <script>
+    // Keep existing GSAP entrance animations
+    gsap.from("#card", {duration:.8, y:-28, opacity:0, ease:"power3.out"});
+    gsap.from(".input-group", {duration:.45, y:18, opacity:0, stagger:.05, delay:.25, ease:"power2.out"});
+
+    // NEW: subtle card tilt
+    const card = document.getElementById('card');
+    card.addEventListener('pointermove', (e)=>{
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width;
+      const y = (e.clientY - r.top) / r.height;
+      const rx = (y - .5) * -4;
+      const ry = (x - .5) * 4;
+      card.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    });
+    card.addEventListener('pointerleave', ()=> card.style.transform = '');
+
+    // Existing password toggle + strength (unchanged, with show-on-type)
+    const pass = document.getElementById('password');
+    const toggle = document.getElementById('togglePass');
+    const barWrap = document.getElementById('pwStrength');
+    const bar = document.getElementById('strengthBar');
+
+    toggle.addEventListener('click', ()=>{
+      const open = pass.type === 'text';
+      pass.type = open ? 'password' : 'text';
+      toggle.textContent = open ? '👁️' : '🔒';
+    });
+
+    function strengthScore(v){
+      let s=0; if(v.length>=8) s+=25; if(/[A-Z]/.test(v)) s+=20; if(/[a-z]/.test(v)) s+=20; if(/[0-9]/.test(v)) s+=20; if(/[^\w\s]/.test(v)) s+=15;
+      return Math.min(100,s);
+    }
+    function updateStrength(){
+      const v = pass.value || "";
+      if(v.length){ barWrap.style.display = 'block'; bar.style.width = strengthScore(v)+'%'; }
+      else{ bar.style.width='0%'; barWrap.style.display='none'; }
+    }
+    pass.addEventListener('input', updateStrength);
+    pass.addEventListener('focus', updateStrength);
+    pass.addEventListener('blur', ()=>{ if(!pass.value) barWrap.style.display='none'; });
+
+    // Keep ripple + async submit; add confetti on success
+    const form = document.getElementById('signup-form');
+    const btn  = document.getElementById('submitBtn');
+
+    btn.addEventListener('click', (e)=>{
+      const r = document.createElement('span');
+      r.className = 'ripple';
+      const rect = btn.getBoundingClientRect();
+      r.style.left = (e.clientX - rect.left) + 'px';
+      r.style.top  = (e.clientY - rect.top)  + 'px';
+      btn.appendChild(r);
+      setTimeout(()=> r.remove(), 650);
+    });
+
+    function confettiBurst(x, y){
+      const root = document.body;
+      const colors = ['#7cc8ff','#f39ce2','#72f1b8','#ffd166','#ff6b6b'];
+      for(let i=0;i<24;i++){
+        const s = document.createElement('span');
+        s.style.position='fixed';
+        s.style.left = x+'px';
+        s.style.top  = y+'px';
+        s.style.width = s.style.height = (6+Math.random()*6)+'px';
+        s.style.borderRadius = Math.random()>.4 ? '50%' : '3px';
+        s.style.background = colors[Math.floor(Math.random()*colors.length)];
+        s.style.filter='drop-shadow(0 0 6px rgba(255,255,255,.35))';
+        s.style.pointerEvents='none';
+        s.style.zIndex = 9999;
+        const dx = (Math.random()*2-1) * (window.innerWidth*0.25);
+        const dy = (Math.random()*2-1) * (window.innerHeight*0.25);
+        s.animate([
+          { transform:`translate(0,0)`, opacity:1 },
+          { transform:`translate(${dx}px, ${dy}px) rotate(${Math.random()*720}deg)`, opacity:0 }
+        ], { duration: 1200 + Math.random()*500, easing:'cubic-bezier(.2,.7,.2,1)', fill:'forwards' });
+        root.appendChild(s);
+        setTimeout(()=> s.remove(), 2000);
+      }
+    }
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!form.checkValidity()){ return showError('Please fill all required fields correctly.'); }
+
+      btn.classList.add('btn-loading');
+      const sp = document.createElement('span'); sp.className='spinner'; btn.appendChild(sp);
+
+      try{
+        const fd = new FormData(form);
+        const res = await fetch(form.action, { method:'POST', body: fd });
+        const ct = res.headers.get('content-type') || '';
+        if(ct.includes('application/json')){
+          const result = await res.json();
+          if(result.success){
+            const rect = btn.getBoundingClientRect();
+            confettiBurst(rect.left+rect.width/2, rect.top+rect.height/2);
+            setTimeout(()=> window.location.href='/dashboard', 600);
+          }else{
+            showError(result.message || 'Signup failed.');
+          }
+        }else{
+          // assume server handled redirect
+          window.location.href = res.url || '/dashboard';
         }
+      }catch(err){
+        showError('Network error. Please try again.');
+      }finally{
+        btn.classList.remove('btn-loading');
+        const s = document.querySelector('.spinner'); if(s) s.remove();
+      }
+    });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            gsap.from('.signup-container', {duration: 1, opacity: 0, y: -50, ease: 'power3.out'});
-            gsap.from('input, button', {duration: 0.5, opacity: 0, y: 20, stagger: 0.1, ease: 'power2.out', delay: 0.5});
-        });
+    function showError(msg){
+      const box = document.getElementById('error-message');
+      box.textContent = msg; box.style.display='block';
+      gsap.fromTo(box, {y:-8, opacity:0}, {duration:.35, y:0, opacity:1, ease:'power2.out'});
+      gsap.to('#card', {x:-6, duration:.06, yoyo:true, repeat:5});
+    }
 
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const response = await fetch('/signup', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            if (result.success) {
-                window.location.href = '/dashboard';
-            } else {
-                document.getElementById('error-message').textContent = result.message;
-                gsap.from('#error-message', {duration: 0.3, opacity: 0, y: -10, ease: 'power2.out'});
-            }
+    // NEW: floating particle background
+    (function(){
+      const c = document.getElementById('stars');
+      const ctx = c.getContext('2d');
+      let w,h,parts=[];
+      function resize(){ w= c.width = window.innerWidth; h= c.height = window.innerHeight; parts = Array.from({length: 90}, ()=>({
+        x: Math.random()*w, y: Math.random()*h, r: Math.random()*1.6+0.4, vx:(Math.random()-.5)*0.15, vy:(Math.random()-.5)*0.15, a: Math.random()*1
+      }));}
+      function step(){
+        ctx.clearRect(0,0,w,h);
+        parts.forEach(p=>{
+          p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>w) p.vx*=-1; if(p.y<0||p.y>h) p.vy*=-1;
+          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+          ctx.fillStyle = `rgba(255,255,255,${0.35*p.a})`; ctx.fill();
         });
-    </script>
+        requestAnimationFrame(step);
+      }
+      resize(); step(); window.addEventListener('resize', resize);
+    })();
+  </script>
 </body>
 </html>
